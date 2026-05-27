@@ -1,9 +1,9 @@
 import numpy as np
 
 class Simulator:
-    def __init__(self,model):
+    def __init__(self,model,X0):
         self.model=model
-        self.X=np.array([[0.0], [0.0]])
+        self.X=X0
         return
     def step(self,u):
         self.X=self.model.Ad @ self.X + self.model.Bd @ u

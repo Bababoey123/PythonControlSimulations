@@ -2,7 +2,13 @@ from Models.ballbeam import BallBeam
 from Models import ballbeam_config
 from Simulation.simulation import Simulator
 from Control.observer import Observer
-from Control.controller import StateFeedbackController
+from Control.StateFeedback import StateFeedbackController
+from Control.PID import PID_Controller
+from Metrics_Plotting.SimLog import SimLog
+from Metrics_Plotting.Plotting import Plotting
+from Validation.validate_StateFeeback import Validate_StateFeedback
+
+
 
 import control as ct
 import numpy as np
@@ -13,25 +19,33 @@ model=BallBeam(ballbeam_config.H,ballbeam_config.dt)
 ## state feeddback gain
 K = ct.place(model.Ad, model.Bd, [0.9, 0.95])
 ## observer feedback gain 
-L = ct.place(model.Ad.T,model.Cd.T, [0.4, 0.5]).T
+L = ct.place(model.Ad.T,model.Cd.T, [0.4, 0.3]).T
 
-##setting up the controller
-X_REF=np.array([[1.0], [0.0]])
-controller=StateFeedbackController(K,X_REF)
 ##setting up the observer 
 observer=Observer(model.Ad,model.Bd,model.Cd,L)
 
+## initial state 
+X_0=np.array([[0.5],[0]])
+
+##setting up the controller
+X_REF=np.array([[0.0], [0.0]])
+controller=StateFeedbackController(K,X_REF)
+#controller=PID_Controller(10,0,5,ballbeam_config.dt)
+#controller.setReference(0.5)
+
+
+##logging setup
+Logger=SimLog()
+
 ##plotting initialisations
+Plotter=Plotting()
+##for loop config
 N = int(ballbeam_config.T / ballbeam_config.dt) #nuber of array elements 
 u = np.array([[0.0]]) #initial control input 
-t_hist = []
-y_hist = []
-u_hist = []
-xhat_hist = []
-err_hist=[]
+
 
 ## creating the simulator
-BBS_sim=Simulator(model)
+BBS_sim=Simulator(model,X_0)
 
 ## control loop
 for k in range(0,N):
@@ -43,38 +57,13 @@ for k in range(0,N):
     Xhat=observer.reconstruct(y,u)
 
     ## 3 calculate the control input 
-    u=controller.compute(Xhat)
+    u=controller.compute(X)
 
     ## 4 log into arrays
     t=k*ballbeam_config.dt
-    t_hist.append(t)
-    y_hist.append(y.item())
-    u_hist.append(u.item())
-    xhat_hist.append(Xhat.copy())
-    err_hist.append(np.abs(y.item()-Xhat[0,0]))
+    Logger.log(t,y,u,Xhat)
 
 ## plotting
-plt.figure()
-plt.plot(t_hist, y_hist)
-
-plt.grid(True)
-
-plt.xlabel("time [s]")
-plt.ylabel("position")
-
-plt.figure()
-
-plt.plot(t_hist, u_hist)
-
-plt.grid(True)
-
-plt.xlabel("time [s]")
-plt.ylabel("control input")
-
-plt.figure()
-plt.plot(t_hist,err_hist)
-plt.grid(True)
-plt.xlabel("time [s]")
-plt.ylabel("observer position error")
-
-plt.show()
+Plotter.plotAll(Logger)
+## validation
+Validation=Validate_StateFeedback(model,K,ballbeam_config)

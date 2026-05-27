@@ -1,0 +1,54 @@
+    t_hist.append(t)
+    y_hist.append(y.item())
+    u_hist.append(u.item())
+    xhat_hist.append(Xhat.copy())
+    err_hist.append(np.abs(y.item()-Xhat[0,0]))
+## plotting
+plt.figure()
+plt.plot(t_hist, y_hist)
+
+plt.grid(True)
+
+plt.xlabel("time [s]")
+plt.ylabel("position")
+
+plt.figure()
+
+plt.plot(t_hist, u_hist)
+
+plt.grid(True)
+
+plt.xlabel("time [s]")
+plt.ylabel("control input")
+
+plt.figure()
+plt.plot(t_hist,err_hist)
+plt.grid(True)
+plt.xlabel("time [s]")
+plt.ylabel("observer position error")
+
+## validation
+Acl = model.Ad - model.Bd @ K
+sys_validate=ct.ss(Acl,model.Bd,model.Cd,model.Dd,ballbeam_config.dt)
+
+t_ref = np.arange(0, ballbeam_config.T, ballbeam_config.dt)
+
+
+
+t_ref, y_ref = ct.initial_response(sys_validate,T=t_ref,X0=X_0)
+
+plt.figure()
+
+plt.plot(t_hist,
+         y_hist,
+         label="Custom simulation")
+
+plt.plot(t_ref,
+         y_ref,
+         '--',
+         label="Control toolbox")
+
+plt.legend()
+
+plt.grid(True)
+plt.show()
