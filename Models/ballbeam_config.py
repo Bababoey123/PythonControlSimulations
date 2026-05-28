@@ -9,7 +9,7 @@ J = 9.99e-6 # kg*m^2
 d= 0.03
 L=1.0
 
-## sampling frequency
+## sampling frequency for the controller 
 dt=0.05 #5ms 
 ## simulation time 
 T=5 #sec

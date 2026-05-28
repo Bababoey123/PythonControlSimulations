@@ -1,7 +1,7 @@
 import numpy as np
 
 class StateFeedbackController_Observer:
-    def __init__(self,K,X_REF,observer,Max_actuation):
+    def __init__(self,K,X_REF,Max_actuation,observer):
         self.K=K
         self.X_REF=X_REF
         self.observer=observer

@@ -1,0 +1,163 @@
+from Models.ballbeam import BallBeam
+from Models import ballbeam_config
+from Simulation.simulation import Simulator
+from Simulation.simulation import ControlLoop
+from Control.observer import Observer
+from Control.StateFeedback import StateFeedbackController
+from Control.StateFeedback import StateFeedbackController_Observer
+from Control.PID import PID_Controller
+from Metrics_Plotting.SimLog import SimLog
+from Metrics_Plotting.Plotting import Plotting
+from Validation.validate_StateFeeback import Validate_StateFeedback
+
+
+
+import control as ct
+import numpy as np
+import matplotlib.pyplot as plt 
+## functions
+def PID_Control(Kp,Ki,Kd,X_0,X_REF,config_file):
+    model=BallBeam(config_file.H,config_file.dt)
+    ## observer feedback gain 
+    L = ct.place(model.Ad.T,model.Cd.T, [0.5, 0.6]).T
+
+    ##setting up the observer 
+    observer=Observer(model.Ad,model.Bd,model.Cd,L)
+
+
+    controller=PID_Controller(Kp,Ki,Kd,config_file.dt)
+    controller.setReference(X_REF[0,0])
+    ##logging setup
+    Logger=SimLog()
+    ##sim setup
+    BBS_sim=Simulator(model,X_0)
+    controlSim=ControlLoop(ballbeam_config,model,controller,observer,BBS_sim)
+    ## run control loop
+    Logger=controlSim.run_continuous_control_loop(X_0,Logger)
+    plt.figure()
+    plt.plot(Logger.t_hist, Logger.y_hist)
+
+    plt.grid(True)
+
+    plt.xlabel("time [s]")
+    plt.ylabel("position")
+
+    plt.show()
+    return Logger
+def Full_State_Feedback(K,Max_actuation,X_0,X_REF,config_file):
+    model=BallBeam(config_file.H,config_file.dt)
+    
+     ## observer feedback gain 
+    L = ct.place(model.Ad.T,model.Cd.T, [0.5, 0.6]).T
+
+    ##setting up the observer 
+    observer=Observer(model.Ad,model.Bd,model.Cd,L)
+
+    controller=StateFeedbackController(K,X_REF,Max_actuation)
+
+    BBS_sim=Simulator(model,X_0)
+    controlSim=ControlLoop(ballbeam_config,model,controller,observer,BBS_sim)
+
+    ##logging setup
+    Logger=SimLog()
+
+    ## run control loop
+    Logger=controlSim.run_continuous_control_loop(X_0,Logger)
+
+    ##plotting initialisations
+    Plotter=Plotting()
+
+    ## plotting
+    plt.figure()
+    plt.plot(Logger.t_hist, Logger.y_hist)
+
+    plt.grid(True)
+
+    plt.xlabel("time [s]")
+    plt.ylabel("position")
+
+    plt.figure()
+
+    plt.plot(Logger.t_hist, Logger.u_hist)
+
+    plt.grid(True)
+
+    plt.xlabel("time [s]")
+    plt.ylabel("control input")
+
+    return Logger
+
+def Observer_Feedback_Poles(poles,Max_actuation,X_0,X_REF,config_file):
+    model=BallBeam(config_file.H,config_file.dt)
+    
+     ## observer feedback gain 
+    L = ct.place(model.Ad.T,model.Cd.T, [0.5, 0.6]).T
+
+    ##setting up the observer 
+    observer=Observer(model.Ad,model.Bd,model.Cd,L)
+
+    K = ct.place(model.Ad, model.Bd, poles)
+    controller=StateFeedbackController_Observer(K,X_REF,Max_actuation,observer)
+
+    BBS_sim=Simulator(model,X_0)
+    controlSim=ControlLoop(ballbeam_config,model,controller,observer,BBS_sim)
+
+    ##logging setup
+    Logger=SimLog()
+
+    ## run control loop
+    Logger=controlSim.run_continuous_control_loop(X_0,Logger)
+
+    ##plotting initialisations
+    Plotter=Plotting()
+
+    ## plotting
+    Plotter.plotAll(Logger)
+
+    return Logger
+def Observer_Feedback_LQR(Q,R,Max_actuation,X_0,X_REF,config_file):
+    model=BallBeam(config_file.H,config_file.dt)
+    
+     ## observer feedback gain 
+    L = ct.place(model.Ad.T,model.Cd.T, [0.5, 0.6]).T
+
+    ##setting up the observer 
+    observer=Observer(model.Ad,model.Bd,model.Cd,L)
+
+    K,_,_=ct.dlqr(model.Ad,model.Bd,Q,R)
+    controller=StateFeedbackController_Observer(K,X_REF,Max_actuation,observer)
+
+    BBS_sim=Simulator(model,X_0)
+    controlSim=ControlLoop(ballbeam_config,model,controller,observer,BBS_sim)
+
+    ##logging setup
+    Logger=SimLog()
+
+    ## run control loop
+    Logger=controlSim.run_continuous_control_loop(X_0,Logger)
+
+    ##plotting initialisations
+    Plotter=Plotting()
+
+    ## plotting
+    Plotter.plotAll(Logger)
+
+    return Logger
+
+
+model=BallBeam(ballbeam_config.H,ballbeam_config.dt)
+
+## Cost Matrices 
+Q = np.diag([2, 2])
+R = np.array([[20]])
+
+## initial state 
+X_0=np.array([[0.0],[0]])
+
+##setting up the controller
+X_REF=np.array([[1.0], [0.0]])
+
+
+## validation
+Validation=Validate_StateFeedback(model,K,ballbeam_config)
+Validation.Validate(ballbeam_config,Logger,X_0,Plotter)
