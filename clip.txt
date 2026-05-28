@@ -52,3 +52,26 @@ plt.legend()
 
 plt.grid(True)
 plt.show()
+##for loop config
+N = int(ballbeam_config.T / ballbeam_config.dt) #nuber of array elements 
+u = np.array([[0.0]]) #initial control input 
+
+
+## creating the simulator
+BBS_sim=Simulator(model,X_0)
+
+## control loop
+for k in range(0,N):
+
+    ## 1  simulate plant 
+    y, X = BBS_sim.step(u)
+
+    ## 2 estimate state
+    Xhat=observer.reconstruct(y,u)
+
+    ## 3 calculate the control input 
+    u=controller.compute(X)
+
+    ## 4 log into arrays
+    t=k*ballbeam_config.dt
+    Logger.log(t,y,u,Xhat)

@@ -40,9 +40,8 @@ class Plotting:
         plt.plot(t_ref,y_ref,'--',label="Control toolbox")
 
         plt.legend()
-
+        
         plt.grid(True)
         plt.show()
-        
         return
     

@@ -10,7 +10,7 @@ d= 0.03
 L=1.0
 
 ## sampling frequency
-dt=0.005 #5ms 
+dt=0.05 #5ms 
 ## simulation time 
 T=5 #sec
 H =  -m*g*d/L/(J/R**2+m)

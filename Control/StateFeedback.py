@@ -1,10 +1,11 @@
 import numpy as np
 
 class StateFeedbackController_Observer:
-    def __init__(self,K,X_REF,observer):
+    def __init__(self,K,X_REF,observer,Max_actuation):
         self.K=K
         self.X_REF=X_REF
         self.observer=observer
+        self.Max_actuation=Max_actuation
 
         self.u_prev=np.zeros((1,1))
         return
@@ -16,13 +17,16 @@ class StateFeedbackController_Observer:
         Xhat=self.observer.reconstruct(y,self.u_prev)
         #update the previous input 
         self.u_prev=u
+        u = np.clip(u, -self.Max_actuation, self.Max_actuation)
         return u
 class StateFeedbackController:
-    def __init__(self,K,X_REF):
+    def __init__(self,K,X_REF,Max_actuation):
         self.K=K
         self.X_REF=X_REF
+        self.Max_actuation=Max_actuation
         return
       
     def compute(self,X):
         u=-self.K@(X-self.X_REF)  
+        u = np.clip(u, -self.Max_actuation, self.Max_actuation)
         return u
