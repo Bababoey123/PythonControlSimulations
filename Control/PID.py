@@ -18,9 +18,9 @@ class PID_Controller:
     def setReference(self,r):
         self.reference=r
         return
-    def compute(self,y):
+    def compute(self,Xhat):
         #error 
-        error=self.reference-y.item()
+        error=self.reference-Xhat[0,0]
 
         #integral 
         self.integral+=error*self.dt

@@ -43,13 +43,14 @@ class ControlLoop:
         return Logger
     def run_continuous_control_loop(self,X_0,Logger):
         N_substep=int(self.config_file.dt/self.dt_plant) ## number of substeps between each controller update
-        X=X_0
+        self.simulator.X=X_0
+        X=self.simulator.X.copy()
         t=0
         u = np.array([[0.0]]) #initial control input 
         while t<self.config_file.T:
             y=self.model.C @ X
             Xhat=self.observer.reconstruct(y,u)
-            u=self.controller.compute(y)
+            u=self.controller.compute(Xhat)
             
             for i in range (N_substep):
                 x_dot=self.model.A @ X + self.model.B @ u
